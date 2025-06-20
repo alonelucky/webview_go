@@ -1,5 +1,10 @@
 # webview_go
 
+### Features:
+1. MacOS add edit menu, for copy and paste [reference issues](https://github.com/webview/webview/issues/397).
+2. On Windows, custom UserData dir [reference issues](https://github.com/TsXor/webview/commit/52dc59eadb3d40ffa2456c80dd84b889104aefd1). 
+
+
 [![GoDoc](https://godoc.org/github.com/webview/webview_go?status.svg)](https://godoc.org/github.com/webview/webview_go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview_go)](https://goreportcard.com/report/github.com/webview/webview_go)
 

@@ -211,7 +211,10 @@ typedef enum {
 /// @}
 
 #ifdef __cplusplus
+using namespace std;
+
 extern "C" {
+  
 #endif
 
 /**
@@ -237,7 +240,7 @@ extern "C" {
  * @retval WEBVIEW_ERROR_MISSING_DEPENDENCY
  *         May be returned if WebView2 is unavailable on Windows.
  */
-WEBVIEW_API webview_t webview_create(int debug, void *window);
+WEBVIEW_API webview_t webview_create(int debug, void *window, const char *userdir);
 
 /**
  * Destroys a webview instance and closes the native window.
@@ -3846,7 +3849,7 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
+  win32_edge_engine(bool debug, void *window, const char *userdata_path) : m_owns_window{!window} {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -4060,7 +4063,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_widget, debug, cb).ensure_ok();
+    embed(m_widget, debug, userdata_path, cb).ensure_ok();
   }
 
   virtual ~win32_edge_engine() {
@@ -4246,7 +4249,7 @@ protected:
   }
 
 private:
-  noresult embed(HWND wnd, bool debug, msg_cb_t cb) {
+  noresult embed(HWND wnd, bool debug, const char *userdata_path, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -4254,13 +4257,30 @@ private:
     GetModuleFileNameW(nullptr, currentExePath, MAX_PATH);
     wchar_t *currentExeName = PathFindFileNameW(currentExePath);
 
-    wchar_t dataPath[MAX_PATH];
-    if (!SUCCEEDED(
-            SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
-      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
-    }
+    // wchar_t dataPath[MAX_PATH];
+    // if (!SUCCEEDED(
+    //         SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
+    //   return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
+    // }
     wchar_t userDataFolder[MAX_PATH];
-    PathCombineW(userDataFolder, dataPath, currentExeName);
+    // PathCombineW(userDataFolder, dataPath, currentExeName);
+    if (!userdata_path) {
+      wchar_t dataPath[MAX_PATH];//Add commentMore actions
+      if (!SUCCEEDED(
+              SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
+        return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
+      }
+      PathCombineW(userDataFolder, dataPath, currentExeName);
+    } else {
+      // if (userdata_path.length() >= MAX_PATH) return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
+      // memcpy(&userDataFolder, &userdata_path.front(),
+      //     userdata_path.length() * sizeof(wchar_t));
+      // userDataFolder[userdata_path.length()] = L'\0';
+      const size_t cSize = strlen(userdata_path)+1;
+    // wchar_t* wc = new wchar_t[cSize];
+    mbstowcs (userDataFolder, userdata_path, cSize);
+      // userDataFolder = userdata_path;
+    }
 
     m_com_handler = new webview2_com_handler(
         wnd, cb,
@@ -4435,6 +4455,7 @@ using browser_engine = detail::win32_edge_engine;
 
 namespace webview {
 using webview = browser_engine;
+using namespace std;
 
 namespace detail {
 
@@ -4449,12 +4470,12 @@ webview *cast_to_webview(void *w) {
 } // namespace detail
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
+WEBVIEW_API webview_t webview_create(int debug, void *wnd, const char *userdata_path) {
   using namespace webview::detail;
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {
-        return new webview::webview{static_cast<bool>(debug), wnd};
+        return new webview::webview{static_cast<bool>(debug), wnd, userdata_path};
       },
       [&](webview::webview *w_) { w = w_; });
   if (err == WEBVIEW_ERROR_OK) {
