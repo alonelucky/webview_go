@@ -85,6 +85,8 @@ type WebView interface {
 
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
+	Size() (width int, height int)
+	SetHint(hint Hint)
 
 	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
 	// URI. Examples:
@@ -124,6 +126,8 @@ type WebView interface {
 type webview struct {
 	w       C.webview_t
 	userdir string
+	width   int
+	height  int
 }
 
 var (
@@ -145,11 +149,28 @@ type Option func(*webview)
 // only support windows now.
 func WithUserdir(dir string) Option {
 	return func(s *webview) {
+		if dir == "" {
+			return
+		}
 		dir, e := filepath.Abs(dir)
 		if e != nil {
 			panic(e)
 		}
 		s.userdir = dir
+	}
+}
+
+// default 640
+func WithWidth(w int) Option {
+	return func(s *webview) {
+		s.width = w
+	}
+}
+
+// default 480
+func WithHeight(h int) Option {
+	return func(s *webview) {
+		s.height = h
 	}
 }
 
@@ -168,9 +189,21 @@ func NewWindow(debug bool, window unsafe.Pointer, ops ...Option) WebView {
 	for _, f := range ops {
 		f(w)
 	}
-	s := C.CString(w.userdir)
-	defer C.free(unsafe.Pointer(s))
-	w.w = C.webview_create(boolToInt(debug), window, s)
+	var s *C.char
+	if w.userdir != "" {
+		s = C.CString(w.userdir)
+		defer C.free(unsafe.Pointer(s))
+	}
+
+	if w.width == 0 {
+		w.width = 640
+	}
+
+	if w.height == 0 {
+		w.height = 480
+	}
+	defer w.SetSize(w.width, w.height, HintNone)
+	w.w = C.webview_create(boolToInt(debug), window, s, C.int(w.width), C.int(w.height))
 	return w
 }
 
@@ -210,6 +243,14 @@ func (w *webview) SetTitle(title string) {
 
 func (w *webview) SetSize(width int, height int, hint Hint) {
 	C.webview_set_size(w.w, C.int(width), C.int(height), C.webview_hint_t(hint))
+}
+
+func (w *webview) SetHint(hint Hint) {
+	C.webview_set_size(w.w, C.int(w.width), C.int(w.height), C.webview_hint_t(hint))
+}
+
+func (w *webview) Size() (width int, height int) {
+	return w.width, w.height
 }
 
 func (w *webview) Init(js string) {

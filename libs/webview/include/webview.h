@@ -211,10 +211,7 @@ typedef enum {
 /// @}
 
 #ifdef __cplusplus
-using namespace std;
-
 extern "C" {
-  
 #endif
 
 /**
@@ -240,7 +237,7 @@ extern "C" {
  * @retval WEBVIEW_ERROR_MISSING_DEPENDENCY
  *         May be returned if WebView2 is unavailable on Windows.
  */
-WEBVIEW_API webview_t webview_create(int debug, void *window, const char *userdir);
+WEBVIEW_API webview_t webview_create(int debug, void *window, const char *userdir, int width, int height);
 
 /**
  * Destroys a webview instance and closes the native window.
@@ -1852,7 +1849,7 @@ public:
 
 class gtk_webkit_engine : public engine_base {
 public:
-  gtk_webkit_engine(bool debug, void *window, const char *userdata_path)
+  gtk_webkit_engine(bool debug, void *window, const char *userdata_path, int width, int height)
       : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
     if (m_owns_window) {
       if (!gtk_compat::init_check()) {
@@ -2204,7 +2201,7 @@ private:
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window, const char *userdata_path)
+  cocoa_wkwebview_engine(bool debug, void *window, const char *userdata_path, int width, int height)
       : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
                                                                !window} {
     auto app = get_shared_application();
@@ -3849,7 +3846,7 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window, const char *userdata_path) : m_owns_window{!window} {
+  win32_edge_engine(bool debug, void *window, const char *userdata_path, const int width, const int height) : m_owns_window{!window} {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -3955,8 +3952,8 @@ public:
       on_window_created();
 
       m_dpi = get_window_dpi(m_window);
-      constexpr const int initial_width = 640;
-      constexpr const int initial_height = 480;
+      const int initial_width = width;
+      const int initial_height = height;
       set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = IsWindow(static_cast<HWND>(window))
@@ -4470,12 +4467,12 @@ webview *cast_to_webview(void *w) {
 } // namespace detail
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(int debug, void *wnd, const char *userdata_path) {
+WEBVIEW_API webview_t webview_create(int debug, void *wnd, const char *userdata_path, const int width, const int height) {
   using namespace webview::detail;
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {
-        return new webview::webview{static_cast<bool>(debug), wnd, userdata_path};
+        return new webview::webview{static_cast<bool>(debug), wnd, userdata_path, width, height};
       },
       [&](webview::webview *w_) { w = w_; });
   if (err == WEBVIEW_ERROR_OK) {
