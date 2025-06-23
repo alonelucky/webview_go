@@ -2204,7 +2204,7 @@ private:
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window)
+  cocoa_wkwebview_engine(bool debug, void *window, const char *userdata_path)
       : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
                                                                !window} {
     auto app = get_shared_application();
