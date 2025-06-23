@@ -27,6 +27,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"sync"
@@ -121,7 +122,8 @@ type WebView interface {
 }
 
 type webview struct {
-	w C.webview_t
+	w       C.webview_t
+	userdir string
 }
 
 var (
@@ -138,9 +140,22 @@ func boolToInt(b bool) C.int {
 	return 0
 }
 
+type Option func(*webview)
+
+// only support windows now.
+func WithUserdir(dir string) Option {
+	return func(s *webview) {
+		dir, e := filepath.Abs(dir)
+		if e != nil {
+			panic(e)
+		}
+		s.userdir = dir
+	}
+}
+
 // New calls NewWindow to create a new window and a new webview instance. If debug
 // is non-zero - developer tools will be enabled (if the platform supports them).
-func New(debug bool, userdir string) WebView { return NewWindow(debug, userdir, nil) }
+func New(debug bool, ops ...Option) WebView { return NewWindow(debug, nil, ops...) }
 
 // NewWindow creates a new webview instance. If debug is non-zero - developer
 // tools will be enabled (if the platform supports them). Window parameter can be
@@ -148,10 +163,13 @@ func New(debug bool, userdir string) WebView { return NewWindow(debug, userdir, 
 // embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be passed
 // here.
-func NewWindow(debug bool, userdir string, window unsafe.Pointer) WebView {
-	s := C.CString(userdir)
-	defer C.free(unsafe.Pointer(s))
+func NewWindow(debug bool, window unsafe.Pointer, ops ...Option) WebView {
 	w := &webview{}
+	for _, f := range ops {
+		f(w)
+	}
+	s := C.CString(w.userdir)
+	defer C.free(unsafe.Pointer(s))
 	w.w = C.webview_create(boolToInt(debug), window, s)
 	return w
 }
