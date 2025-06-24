@@ -4269,14 +4269,8 @@ private:
       }
       PathCombineW(userDataFolder, dataPath, currentExeName);
     } else {
-      // if (userdata_path.length() >= MAX_PATH) return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
-      // memcpy(&userDataFolder, &userdata_path.front(),
-      //     userdata_path.length() * sizeof(wchar_t));
-      // userDataFolder[userdata_path.length()] = L'\0';
-      const size_t cSize = strlen(userdata_path)+1;
-    // wchar_t* wc = new wchar_t[cSize];
-    mbstowcs (userDataFolder, userdata_path, cSize);
-      // userDataFolder = userdata_path;
+      int wlen = MultiByteToWideChar(CP_UTF8, 0, userdata_path, -1, NULL, 0);
+      MultiByteToWideChar(CP_UTF8, 0, userdata_path, -1, userDataFolder, wlen);
     }
 
     m_com_handler = new webview2_com_handler(
