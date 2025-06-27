@@ -202,7 +202,7 @@ func NewWindow(debug bool, window unsafe.Pointer, ops ...Option) WebView {
 	if w.height == 0 {
 		w.height = 480
 	}
-	defer w.SetSize(w.width, w.height, HintNone)
+	defer w.SetSize(w.width, w.height, HintMin)
 	w.w = C.webview_create(boolToInt(debug), window, s, C.int(w.width), C.int(w.height))
 	return w
 }
