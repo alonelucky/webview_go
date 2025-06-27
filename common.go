@@ -3,7 +3,7 @@
 
 package webview
 
-func SetWindowIcon(hwnd uintptr, ico string, showicon uint) {
+func SetWindowIcon(hwnd uintptr, ico string) {
 }
 
-func SetWindowIconEmbed(hwnd uintptr, ico []byte, showicon uint) {}
+func SetWindowIconEmbed(hwnd uintptr, ico []byte) {}
