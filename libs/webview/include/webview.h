@@ -3952,9 +3952,9 @@ public:
       on_window_created();
 
       m_dpi = get_window_dpi(m_window);
-      const int initial_width = width;
-      const int initial_height = height;
-      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
+      // const int initial_width = width;
+      // const int initial_height = height;
+      // set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = IsWindow(static_cast<HWND>(window))
                      ? static_cast<HWND>(window)
@@ -4052,9 +4052,9 @@ public:
     }
 
     if (m_owns_window) {
-      ShowWindow(m_window, SW_SHOW);
+      // ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
-      SetFocus(m_window);
+      // SetFocus(m_window);
     }
 
     auto cb =
@@ -4183,6 +4183,11 @@ protected:
       SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
+    }
+    if (m_owns_window) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
     }
     return {};
   }
